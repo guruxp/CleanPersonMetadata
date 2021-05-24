@@ -632,11 +632,22 @@ process {
 
     $EwsService = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService( $ExchangeVersion)
     $Credentials = Get-Credential
+
+    $ExchangeManagementModuleVersion = (Get-InstalledModule ExchangeOnlineManagement).Version
+    $dllLocation = (Get-InstalledModule ExchangeOnlineManagement).InstalledLocation
+
+    if ($ExchangeManagementModuleVersion -le "2.0.3") {
+        $EMMInstallLocation = $dllLocation
+    }
+    ElseIf ($ExchangeManagementModuleVersion -ge '2.0.4') {
+        $EMMInstallLocation = "$($dllLocation)\netFramework"
+    }
+
     If ( $Credentials) {
         try {
             #ModernAuth
             $ClientId = "d3590ed6-52b3-4102-aeff-aad2292ab01c"
-            Import-Module "C:\Program Files\WindowsPowerShell\Modules\ExchangeOnlineManagement\2.0.3\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" -force
+            Import-Module "$($EMMInstallLocation)\Microsoft.IdentityModel.Clients.ActiveDirectory.dll" -force
 			$Context = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext("https://login.microsoftonline.com/common")
             $AADcredential = New-Object "Microsoft.IdentityModel.Clients.ActiveDirectory.UserPasswordCredential" -ArgumentList  $Credentials.UserName.ToString(), $Credentials.GetNetworkCredential().password.ToString()
 			$token = [Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContextIntegratedAuthExtensions]::AcquireTokenAsync($Context,"https://outlook.office365.com",$ClientId,$AADcredential).result
